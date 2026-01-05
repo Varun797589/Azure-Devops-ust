@@ -1,0 +1,85 @@
+# Azure DevOps YAML pipeline for ARM template deployment
+
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  environment: 'dev'
+  armTemplate: 'azuredeploy.json'
+
+stages:
+- stage: Validate
+  displayName: 'Validate ARM Template'
+  jobs:
+  - job: ValidateARM
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Validate ARM Template'
+      inputs:
+        azureSubscription: '$(azureSubscription)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az deployment group validate \
+            --resource-group $(resourceGroup) \
+            --template-file $(armTemplate)
+
+- stage: Deploy
+  displayName: 'Deploy ARM Template'
+  dependsOn: Validate
+  jobs:
+  - job: DeployARM
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Create or Update Resource Group'
+      inputs:
+        azureSubscription: '$(azureSubscription)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az group create --name $(resourceGroup) --location eastus
+
+    - task: AzureCLI@2
+      displayName: 'Deploy ARM Template'
+      inputs:
+        azureSubscription: '$(azureSubscription)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az deployment group create \
+            --resource-group $(resourceGroup) \
+            --template-file $(armTemplate)
+
+- stage: Verify
+  displayName: 'Verify Deployment'
+  dependsOn: Deploy
+  jobs:
+  - job: VerifyDeployment
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Verify Deployment Success'
+      inputs:
+        azureSubscription: '$(azureSubscription)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az resource list --resource-group $(resourceGroup)
+
+- stage: Rollback
+  displayName: 'Rollback on Failure'
+  dependsOn: Deploy
+  condition: failed()
+  jobs:
+  - job: RollbackDeployment
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Rollback Deployment'
+      inputs:
+        azureSubscription: '$(azureSubscription)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          echo "Rollback steps to be implemented here."

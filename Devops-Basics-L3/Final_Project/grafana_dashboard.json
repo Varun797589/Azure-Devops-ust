@@ -1,0 +1,26 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Azure Metrics Dashboard",
+    "panels": [
+      {
+        "type": "graph",
+        "title": "CPU Usage",
+        "targets": [
+          {
+            "query": "AzureMonitorQueryForCPUUsage"
+          }
+        ]
+      },
+      {
+        "type": "graph",
+        "title": "Memory Usage",
+        "targets": [
+          {
+            "query": "AzureMonitorQueryForMemoryUsage"
+          }
+        ]
+      }
+    ]
+  }
+}

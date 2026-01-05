@@ -1,0 +1,2 @@
+timestamp,caller,receiver,duration,call_type
+2026-01-01 10:05:00,1234567891,987654322,60,legitimate

@@ -1,0 +1,152 @@
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  rg: image-rg
+  location: eastus
+  imageTemplate: goldenImageTemplate
+  imageName: goldenImage
+  vmssName: demo-vmss
+
+stages:
+
+# ==============================
+# STAGE 1 – BUILD GOLDEN IMAGE
+# ==============================
+- stage: Build_Image
+  displayName: Build Golden Image
+  jobs:
+  - job: ImageBuilder
+    steps:
+    - task: AzureCLI@2
+      displayName: Run Image Builder
+      inputs:
+        azureSubscription: AzureRM
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az group create --name $rg --location $location
+
+          az deployment group create \
+            --resource-group $rg \
+            --template-file image-template.json
+
+          az image builder run \
+            --resource-group $rg \
+            --name $imageTemplate
+
+# ==============================
+# STAGE 2 – VM SCALE SET
+# ==============================
+- stage: VMSS
+  dependsOn: Build_Image
+  jobs:
+  - job: CreateVMSS
+    steps:
+    - task: AzureCLI@2
+      displayName: Create VM Scale Set
+      inputs:
+        azureSubscription: AzureRM
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az vmss create \
+            --resource-group $rg \
+            --name $vmssName \
+            --image $imageName \
+            --vm-sku Standard_D2s_v3 \
+            --instance-count 2 \
+            --admin-username azureuser \
+            --generate-ssh-keys
+
+# ==============================
+# STAGE 3 – AUTO SCALING
+# ==============================
+- stage: Autoscale
+  dependsOn: VMSS
+  jobs:
+  - job: ConfigureAutoscale
+    steps:
+    - task: AzureCLI@2
+      displayName: Configure Auto Scaling
+      inputs:
+        azureSubscription: AzureRM
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az monitor autoscale create \
+            --resource-group $rg \
+            --resource $vmssName \
+            --resource-type Microsoft.Compute/virtualMachineScaleSets \
+            --name cpu-autoscale \
+            --min-count 2 \
+            --max-count 5 \
+            --count 2
+
+          az monitor autoscale rule create \
+            --resource-group $rg \
+            --autoscale-name cpu-autoscale \
+            --condition "Percentage CPU > 70 avg 5m" \
+            --scale out 1
+
+          az monitor autoscale rule create \
+            --resource-group $rg \
+            --autoscale-name cpu-autoscale \
+            --condition "Percentage CPU < 30 avg 5m" \
+            --scale in 1
+
+# ==============================
+# STAGE 4 – SECURITY
+# ==============================
+- stage: Security
+  dependsOn: Autoscale
+  jobs:
+  - job: SecureInfra
+    steps:
+    - task: AzureCLI@2
+      displayName: Apply Security Rules
+      inputs:
+        azureSubscription: AzureRM
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az network nsg create \
+            --resource-group $rg \
+            --name vmss-nsg \
+            --location $location
+
+          az network nsg rule create \
+            --resource-group $rg \
+            --nsg-name vmss-nsg \
+            --name AllowSSH \
+            --priority 1000 \
+            --protocol Tcp \
+            --destination-port-range 22 \
+            --access Allow
+
+# ==============================
+# STAGE 5 – DEPLOY GPT SERVICE
+# ==============================
+- stage: DeployGPTService
+  dependsOn: Security
+  jobs:
+  - job: DeployGPT
+    steps:
+    - task: AzureCLI@2
+      displayName: Deploy GPT-5.1-Codex-Max Service
+      inputs:
+        azureSubscription: AzureRM
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az group create --name $rg --location $location
+
+          az deployment group create \
+            --resource-group $rg \
+            --template-file gpt-service-template.json \
+            --parameters serviceName=gpt-5-1-codex-max
+
+          echo "GPT-5.1-Codex-Max service deployed successfully."

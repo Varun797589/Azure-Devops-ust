@@ -1,0 +1,6 @@
+2026-01-02 12:00:01 INFO: Deployment started successfully.
+2026-01-02 12:05:23 WARNING: Disk space usage exceeded 80%.
+2026-01-02 12:10:45 ERROR: Failed to connect to the database.
+2026-01-02 12:15:12 INFO: Health check passed for all services.
+2026-01-02 12:20:33 WARNING: High memory usage detected.
+2026-01-02 12:25:50 ERROR: Application crashed due to unhandled exception.
