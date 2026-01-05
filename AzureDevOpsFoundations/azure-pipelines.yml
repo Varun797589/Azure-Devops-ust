@@ -1,0 +1,42 @@
+# Azure DevOps YAML Pipeline
+
+
+# When does this pipeline run?
+#trigger:
+#- main
+
+#3️⃣ Where does it run?
+#temporary Ubuntu machine in the cloud
+
+#4️⃣ Pipeline has 3 stages
+#Your pipeline is divided into three clear stages:
+#Build → Test → Deploy
+
+
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+- stage: Build
+  jobs:
+  - job: Build
+    steps:
+    - script: mvn clean package
+      displayName: 'Build Project'
+
+- stage: Test
+  jobs:
+  - job: Test
+    steps:
+    - script: mvn test
+      displayName: 'Run Tests'
+
+- stage: Deploy
+  jobs:
+  - job: Deploy
+    steps:
+    - script: ./deploy.sh
+      displayName: 'Deploy Application'

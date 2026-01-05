@@ -1,0 +1,28 @@
+# Grafana Dashboard Configuration
+# This JSON file can be imported into Grafana to visualize live metrics.
+{
+  "dashboard": {
+    "id": null,
+    "title": "Azure Metrics Dashboard",
+    "panels": [
+      {
+        "type": "graph",
+        "title": "CPU Usage",
+        "targets": [
+          {
+            "query": "avg(azure_vm_cpu_usage)"
+          }
+        ]
+      },
+      {
+        "type": "graph",
+        "title": "Network Throughput",
+        "targets": [
+          {
+            "query": "sum(azure_network_throughput)"
+          }
+        ]
+      }
+    ]
+  }
+}
