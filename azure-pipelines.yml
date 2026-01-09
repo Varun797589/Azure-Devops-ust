@@ -1,0 +1,11 @@
+trigger:
+- main
+
+pool:
+  name: azure-devops-ust   # must match your agent pool EXACTLY
+
+steps:
+- script: |
+    echo "Pipeline is running from GitHub repo Varun797589 🚀"
+    echo "Agent machine name: $(Agent.MachineName)"
+  displayName: "Test self-hosted agent"
