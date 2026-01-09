@@ -5,6 +5,14 @@ pool:
   name: azure-devops-ust
 
 steps:
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: 'Azure-Service-Connection'  # your service connection name
+    scriptType: 'ps'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      echo "Logged in to Azure CLI"
+
 - powershell: |
     ./AzureDevOpsFoundations/DeployAzureVM.ps1
   displayName: 'Run Azure VM Deployment Script'
