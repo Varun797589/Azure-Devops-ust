@@ -2,10 +2,9 @@ trigger:
 - main
 
 pool:
-  name: azure-devops-ust   # must match your agent pool EXACTLY
+  name: azure-devops-ust
 
 steps:
-- script: |
-    echo "Pipeline is running from GitHub repo Varun797589 🚀"
-    echo "Agent machine name: $(Agent.MachineName)"
-  displayName: "Test self-hosted agent"
+- powershell: |
+    ./AzureDevOpsFoundations/DeployAzureVM.ps1
+  displayName: 'Run Azure VM Deployment Script'
